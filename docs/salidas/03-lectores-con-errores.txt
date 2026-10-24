@@ -1,0 +1,29 @@
+﻿SET
+BEGIN
+DO
+CREATE SCHEMA
+CREATE TABLE
+CREATE TABLE
+COPY 7
+DELETE 1
+SELECT 6
+UPDATE 6
+UPDATE 0
+INSERT 0 0
+INSERT 0 6
+ cargadas | rechazadas 
+----------+------------
+        0 |          6
+(1 row)
+
+ linea |       motivo        |                          contenido                           
+-------+---------------------+--------------------------------------------------------------
+     2 | documento ya existe | 1000000001,Mariana,Gómez Rojas (duplicado),mariana.gomez@cor
+     3 | correo vacío        | 1000000021,Carlos,Peña Londoño,,3001000021
+     4 | correo inválido     | 1000000022,Diana,Salgado Cuervo,diana.salgado-arroba-correo-
+     5 | teléfono inválido   | 1000000023,Jorge,Restrepo Vélez,jorge.restrepo@correo-ejempl
+     6 | documento vacío     | ,Sin Documento,Prueba Prueba,sin.documento@correo-ejemplo.ed
+     7 | nombres vacíos      | 1000000025,,Sin Nombre,sin.nombre@correo-ejemplo.edu.co,3001
+(6 rows)
+
+COMMIT
