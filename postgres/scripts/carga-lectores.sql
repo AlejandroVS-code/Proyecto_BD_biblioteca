@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS carga.rechazo_carga (
   motivo     text      NOT NULL
 );
 
--- Paso 1. Leer el archivo tal cual, una fila por linea.
+-- Leer el archivo tal cual, una fila por linea.
 CREATE TEMP TABLE stg_linea (
   n     integer GENERATED ALWAYS AS IDENTITY,
   linea text
@@ -48,7 +48,7 @@ CREATE TEMP TABLE stg_linea (
 COPY stg_linea (linea) FROM :'archivo' WITH (FORMAT text);
 DELETE FROM stg_linea WHERE n = 1 OR trim(linea) = '';   -- encabezado y lineas en blanco
 
--- Paso 2. Partir cada linea en sus campos (todavia como texto).
+-- Partir cada linea en sus campos (todavia como texto).
 -- El correo se normaliza a minusculas; el resto, con trim.
 CREATE TEMP TABLE stg_lector ON COMMIT DROP AS
 SELECT n                                              AS linea_csv,
@@ -62,7 +62,7 @@ SELECT n                                              AS linea_csv,
        NULL::text                                     AS motivo
 FROM stg_linea;
 
--- Paso 3. Validar: la primera regla que falla da el motivo.
+--Validar: la primera regla que falla da el motivo.
 UPDATE stg_lector SET motivo = CASE
   WHEN num_campos <> 5                                  THEN 'tiene ' || num_campos || ' columnas, se esperaban 5'
   WHEN documento = ''                                   THEN 'documento vacío'
@@ -79,7 +79,7 @@ UPDATE stg_lector SET motivo = CASE
                                                         THEN 'correo ya registrado'
 END;
 
--- Paso 4. Duplicados dentro del mismo archivo: se conserva la primera aparicion valida.
+--Duplicados dentro del mismo archivo: se conserva la primera aparicion valida.
 UPDATE stg_lector s SET motivo = CASE
   WHEN EXISTS (SELECT 1 FROM stg_lector p
                WHERE p.documento = s.documento AND p.linea_csv < s.linea_csv AND p.motivo IS NULL)
@@ -93,7 +93,7 @@ WHERE s.motivo IS NULL
               WHERE (p.documento = s.documento OR p.correo = s.correo)
                 AND p.linea_csv < s.linea_csv AND p.motivo IS NULL);
 
--- Paso 5. Pasar las filas validas a cuenta.
+--Pasar las filas validas a cuenta.
 -- usuario = documento; contrasena inicial = documento con hash bcrypt (nunca en texto plano).
 INSERT INTO cuenta (id_rol, usuario, documento, contrasena, nombres, apellidos, correo, telefono)
 SELECT (SELECT id_rol FROM rol WHERE nombre = 'lector'),
@@ -102,7 +102,7 @@ SELECT (SELECT id_rol FROM rol WHERE nombre = 'lector'),
 FROM stg_lector s
 WHERE s.motivo IS NULL;
 
--- Paso 6. Registrar las filas rechazadas en la bitacora.
+--Registrar las filas rechazadas en la bitacora.
 INSERT INTO carga.rechazo_carga (archivo, linea, contenido, motivo)
 SELECT :'archivo', linea_csv, contenido, motivo
 FROM stg_lector

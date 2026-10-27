@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS carga.rechazo_carga (
   motivo     text      NOT NULL
 );
 
--- Paso 1. Leer el archivo tal cual, una fila por linea (FORMAT text: el separador es el
+-- Leer el archivo tal cual, una fila por linea (FORMAT text: el separador es el
 -- tabulador, que no aparece en el CSV, asi que ninguna linea se pierde ni se rompe).
 CREATE TEMP TABLE stg_linea (
   n     integer GENERATED ALWAYS AS IDENTITY,
@@ -41,7 +41,7 @@ CREATE TEMP TABLE stg_linea (
 COPY stg_linea (linea) FROM :'archivo' WITH (FORMAT text);
 DELETE FROM stg_linea WHERE n = 1 OR trim(linea) = '';   -- encabezado y lineas en blanco
 
--- Paso 2. Partir cada linea en sus campos (todavia como texto).
+-- Partir cada linea en sus campos (todavia como texto).
 -- El ISBN se normaliza quitando guiones; el resto, con trim.
 CREATE TEMP TABLE stg_libro ON COMMIT DROP AS
 SELECT n                                                   AS linea_csv,
@@ -56,7 +56,7 @@ SELECT n                                                   AS linea_csv,
        NULL::text                                          AS motivo
 FROM stg_linea;
 
--- Paso 3. Validar: la primera regla que falla da el motivo (el CASE se evalua en orden,
+-- Validar: la primera regla que falla da el motivo (el CASE se evalua en orden,
 -- por eso los ::integer solo se intentan despues de comprobar que el texto son digitos).
 UPDATE stg_libro SET motivo = CASE
   WHEN num_campos <> 6                                  THEN 'tiene ' || num_campos || ' columnas, se esperaban 6'
@@ -74,26 +74,26 @@ UPDATE stg_libro SET motivo = CASE
                                                         THEN 'isbn ya existe en el catálogo'
 END;
 
--- Paso 4. Duplicados dentro del mismo archivo: se conserva la primera aparicion valida.
+--Duplicados dentro del mismo archivo: se conserva la primera aparicion valida.
 UPDATE stg_libro s SET motivo = 'isbn repetido en el archivo'
 WHERE s.motivo IS NULL
   AND EXISTS (SELECT 1 FROM stg_libro p
               WHERE p.isbn = s.isbn AND p.linea_csv < s.linea_csv AND p.motivo IS NULL);
 
--- Paso 5. Pasar las filas validas a las tablas finales.
--- 5a. Categorias que no existan todavia.
+-- Pasar las filas validas a las tablas finales.
+-- Categorias que no existan todavia.
 INSERT INTO categoria (nombre)
 SELECT DISTINCT categoria FROM stg_libro WHERE motivo IS NULL
 ON CONFLICT (nombre) DO NOTHING;
 
--- 5b. Libros (la clave de la categoria se busca por nombre).
+-- Libros (la clave de la categoria se busca por nombre).
 INSERT INTO libro (id_categoria, isbn, titulo, autor, anio_publicacion)
 SELECT c.id_categoria, s.isbn, s.titulo, s.autor, s.anio_publicacion::integer
 FROM stg_libro s
 JOIN categoria c ON c.nombre = s.categoria
 WHERE s.motivo IS NULL;
 
--- 5c. Ejemplares: una fila por copia (codigo = isbn-numero de copia, estado inicial 'disponible').
+-- Ejemplares: una fila por copia (codigo = isbn-numero de copia, estado inicial 'disponible').
 INSERT INTO ejemplar (id_libro, codigo, estado)
 SELECT l.id_libro, v.isbn || '-' || g.n, 'disponible'
 FROM (SELECT isbn, ejemplares_disponibles::integer AS copias
@@ -101,7 +101,7 @@ FROM (SELECT isbn, ejemplares_disponibles::integer AS copias
 JOIN libro l ON l.isbn = v.isbn
 CROSS JOIN LATERAL generate_series(1, v.copias) AS g(n);
 
--- Paso 6. Registrar las filas rechazadas en la bitacora.
+-- Registrar las filas rechazadas en la bitacora.
 INSERT INTO carga.rechazo_carga (archivo, linea, contenido, motivo)
 SELECT :'archivo', linea_csv, contenido, motivo
 FROM stg_libro
