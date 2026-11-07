@@ -1,7 +1,7 @@
 # S16, parte B: tabla de verificación de los cuatro reportes
 
 **Grupo 2 · Bases de Datos (750006C) · Universidad del Valle**
-Corrida: 2026-11-06, con `datos-prueba.sql` (29 préstamos: 21 devueltos y 8 abiertos) sobre la semilla de 32 libros y 20 lectores.
+Corrida: 2026-11-07, con `datos-prueba.sql` (29 préstamos: 21 devueltos y 8 abiertos) sobre la semilla de 32 libros y 20 lectores.
 
 ## Reglas del grupo
 
@@ -35,7 +35,7 @@ Corrida: 2026-11-06, con `datos-prueba.sql` (29 préstamos: 21 devueltos y 8 abi
 | 3 | 3 filas (Camila, Valentina, Juan David) | 3 filas, las mismas |
 | 4 | 4 filas (Juan David ×2, Valentina, Camila) | 4 filas, las mismas y en el mismo orden |
 
-## Salida de `psql` (2026-11-06)
+## Salida de `psql` (2026-11-07)
 
 ### Reporte 1. Los 20 libros más prestados
 
@@ -93,10 +93,10 @@ Corrida: 2026-11-06, con `datos-prueba.sql` (29 préstamos: 21 devueltos y 8 abi
 ```
           lector          |                 correo                 |  telefono  |         titulo          | fecha_limite | dias_mora
 --------------------------+----------------------------------------+------------+-------------------------+--------------+-----------
- Juan David Martínez Ruiz | juan.martinez@correo-ejemplo.edu.co    | 3001000004 | Ficciones               | 2026-10-11   |        26
- Valentina López Díaz     | valentina.lopez@correo-ejemplo.edu.co  | 3001000003 | La sombra del viento    | 2026-10-21   |        16
- Juan David Martínez Ruiz | juan.martinez@correo-ejemplo.edu.co    | 3001000004 | Cien años de soledad    | 2026-10-31   |         6
- Camila Hernández Torres  | camila.hernandez@correo-ejemplo.edu.co | 3001000005 | Los detectives salvajes | 2026-11-04   |         2
+ Juan David Martínez Ruiz | juan.martinez@correo-ejemplo.edu.co    | 3001000004 | Ficciones               | 2026-10-12   |        26
+ Valentina López Díaz     | valentina.lopez@correo-ejemplo.edu.co  | 3001000003 | La sombra del viento    | 2026-10-22   |        16
+ Juan David Martínez Ruiz | juan.martinez@correo-ejemplo.edu.co    | 3001000004 | Cien años de soledad    | 2026-11-01   |         6
+ Camila Hernández Torres  | camila.hernandez@correo-ejemplo.edu.co | 3001000005 | Los detectives salvajes | 2026-11-05   |         2
 (4 rows)
 ```
 
