@@ -15,22 +15,21 @@
 \else
   \set archivo '/scripts/datos/lectores_semilla.csv'
 \endif
-
-SET search_path TO biblioteca, public;
+CREATE SCHEMA IF NOT EXISTS carga;
+SET search_path TO carga, public;
 
 BEGIN;
 
 -- El rol 'lector' debe existir (lo crea postgres/init/02_roles.sql)
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM rol WHERE nombre = 'lector') THEN
+  IF NOT EXISTS (SELECT 1 FROM biblioteca.rol WHERE nombre = 'lector') THEN
     RAISE EXCEPTION 'Falta el rol lector en la tabla rol: revisa postgres/init/02_roles.sql';
   END IF;
 END $$;
 
 -- Bitacora de rechazos (la misma que usa carga-libros.sql)
-CREATE SCHEMA IF NOT EXISTS carga;
-CREATE TABLE IF NOT EXISTS carga.rechazo_carga (
+CREATE TABLE IF NOT EXISTS rechazo_carga (
   id_rechazo integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   fecha      timestamp NOT NULL DEFAULT now(),
   archivo    text      NOT NULL,
@@ -73,9 +72,9 @@ UPDATE stg_lector SET motivo = CASE
   WHEN correo !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'           THEN 'correo inválido'
   WHEN telefono = ''                                    THEN 'teléfono vacío'
   WHEN telefono !~ '^[0-9]{7,10}$'                      THEN 'teléfono inválido'
-  WHEN EXISTS (SELECT 1 FROM cuenta c WHERE c.documento = stg_lector.documento)
+  WHEN EXISTS (SELECT 1 FROM biblioteca.cuenta c WHERE c.documento = stg_lector.documento)
                                                         THEN 'documento ya existe'
-  WHEN EXISTS (SELECT 1 FROM cuenta c WHERE lower(c.correo) = stg_lector.correo)
+  WHEN EXISTS (SELECT 1 FROM biblioteca.cuenta c WHERE lower(c.correo) = stg_lector.correo)
                                                         THEN 'correo ya registrado'
 END;
 
@@ -95,15 +94,15 @@ WHERE s.motivo IS NULL
 
 --Pasar las filas validas a cuenta.
 -- usuario = documento; contrasena inicial = documento con hash bcrypt (nunca en texto plano).
-INSERT INTO cuenta (id_rol, usuario, documento, contrasena, nombres, apellidos, correo, telefono)
-SELECT (SELECT id_rol FROM rol WHERE nombre = 'lector'),
+INSERT INTO biblioteca.cuenta (id_rol, usuario, documento, contrasena, nombres, apellidos, correo, telefono)
+SELECT (SELECT id_rol FROM biblioteca.rol WHERE nombre = 'lector'),
        s.documento, s.documento, crypt(s.documento, gen_salt('bf')),
        s.nombres, s.apellidos, s.correo, s.telefono
 FROM stg_lector s
 WHERE s.motivo IS NULL;
 
 --Registrar las filas rechazadas en la bitacora.
-INSERT INTO carga.rechazo_carga (archivo, linea, contenido, motivo)
+INSERT INTO rechazo_carga (archivo, linea, contenido, motivo)
 SELECT :'archivo', linea_csv, contenido, motivo
 FROM stg_lector
 WHERE motivo IS NOT NULL;
