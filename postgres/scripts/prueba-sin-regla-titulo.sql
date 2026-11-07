@@ -62,7 +62,7 @@ UPDATE stg_libro SET motivo = CASE
   WHEN num_campos <> 6                                  THEN 'tiene ' || num_campos || ' columnas, se esperaban 6'
   WHEN isbn = ''                                        THEN 'isbn vacío'
   WHEN isbn !~ '^[0-9]{13}$'                            THEN 'isbn no tiene 13 dígitos'
-  WHEN titulo = ''                                      THEN 'título vacío'
+  --WHEN titulo = ''                                      THEN 'título vacío'
   WHEN autor = ''                                       THEN 'autor vacío'
   WHEN categoria = ''                                   THEN 'categoría vacía'
   WHEN anio_publicacion !~ '^[0-9]{1,4}$'               THEN 'año no numérico'
