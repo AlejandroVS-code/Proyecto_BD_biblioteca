@@ -1,7 +1,7 @@
-# S14 / Hito 2: Esquema del proyecto en PostgreSQL y carga desde CSV
+# S14 y S16 / Hito 2: Esquema, carga desde CSV y reportes
 
 **Asignatura:** Bases de Datos (750006C), Universidad del Valle
-**Módulo 4, Sesión 14** · Grupo 2
+**Módulo 4, Sesiones 14 y 16** · Grupo 2
 
 ## Integrantes del equipo
 
@@ -14,7 +14,7 @@
 
 ## Qué contiene este repositorio
 
-El esquema de la biblioteca como script de arranque del entorno Docker y la carga de los CSV semilla (libros y lectores), incluidos los archivos con errores intencionales. La carga sigue el patrón **tabla de paso → validación → tabla final → bitácora de rechazos**, todo dentro de una transacción.
+El esquema de la biblioteca como script de arranque del entorno Docker y la carga de los CSV semilla (libros y lectores), incluidos los archivos con errores intencionales. La carga sigue el patrón **tabla de paso → validación → tabla final → bitácora de rechazos**, todo dentro de una transacción. Para S16 incluye además los datos de prueba y los cuatro reportes de préstamos (más prestados, lectores que más leen, morosos y préstamos en mora), con su tabla de verificación.
 
 ## Estructura
 
@@ -30,9 +30,14 @@ El esquema de la biblioteca como script de arranque del entorno Docker y la carg
 │       ├── carga-libros.sql
 │       ├── carga-lectores.sql
 │       ├── prueba-sin-regla-titulo.sql # copia de carga-libros.sql con una regla comentada
+│       ├── parte-a.sql                 # las 11 consultas de la parte A (esquema tienda)
+│       ├── datos-prueba.sql            # préstamos de prueba para los 8 casos (parte B)
+│       ├── reportes.sql                # los cuatro reportes con sus decisiones (parte B)
 │       └── datos/                      # CSV semilla, CSV propio y CSV de la prueba
 └── docs/
+    ├── verificacion-parte-b.md         # tabla de verificación de la parte B (S16)
     └── salidas/                        # salida de psql de cada carga
+        └── 06-reportes-parte-b.txt     # salida de psql de los cuatro reportes (S16)
 ```
 
 ## Guía de ejecución
@@ -83,6 +88,21 @@ docker compose exec postgres psql -U curso -d curso \
 # 6. Ver la bitácora de rechazos
 docker compose exec postgres psql -U curso -d curso \
   -c 'SELECT archivo, linea, motivo FROM carga.rechazo_carga ORDER BY id_rechazo;'
+```
+
+### 3. Datos de prueba y reportes (S16)
+
+Requiere haber corrido antes las cargas limpias de libros y lectores (pasos 1 y 3 de la sección anterior). `datos-prueba.sql` se puede repetir: borra lo que insertó antes y lo vuelve a crear.
+
+```bash
+# 1. Datos de prueba (29 préstamos que cubren los 8 casos)
+docker compose exec postgres psql -U curso -d curso -f /scripts/datos-prueba.sql
+
+# 2. Los cuatro reportes (-P pager=off evita que psql abra el paginador y corte la salida)
+docker compose exec postgres psql -U curso -d curso -P pager=off -f /scripts/reportes.sql
+
+# 3. Guardar la salida como evidencia (en PowerShell)
+docker compose exec -T postgres psql -U curso -d curso -f /scripts/reportes.sql | Out-File -Encoding utf8 docs\salidas\06-reportes-parte-b.txt
 ```
 
 ## Mapeo CSV → esquema propio
@@ -208,12 +228,70 @@ DETAIL:  Failing row contains (40, 7, 9780000000203, , Autor Tres, null, 2003, t
 
 Resultado: 5 cargadas y 3 rechazadas.
 
+## S16: los cuatro reportes
+
+Los reportes están en `postgres/scripts/reportes.sql`; cada consulta lleva encima un comentario con qué devuelve, las decisiones tomadas y el resultado esperado con los datos de prueba.
+
+### Reglas del grupo
+
+- Un préstamo está **abierto** si no tiene fila en `devolucion` (no se usa `prestamo.estado`, que sin el trigger del Hito 4 no se actualiza sola).
+- **Mora:** préstamo abierto con `fecha_limite < CURRENT_DATE`. El préstamo que vence hoy **no** está en mora.
+- Un préstamo devuelto después de su `fecha_limite` ya no es mora: ya se devolvió.
+- **"Libros leídos"** son los préstamos devueltos.
+- Plazo de préstamo: 14 días (`fecha_limite = fecha_prestamo + 14`).
+
+### Decisiones por reporte
+
+| Reporte | La unidad es… | Qué devuelve y decisiones |
+|---|---|---|
+| 1. Los 20 libros más prestados | el libro | Título y número de préstamos de todas las copias juntas. Empates en el puesto 20: `FETCH FIRST 20 ROWS WITH TIES` incluye a todos los empatados. Los libros sin préstamos salen con 0 solo si el top 20 no se completa con libros prestados. |
+| 2. El o los lectores que más han leído | el lector | Solo cuentan los préstamos con devolución. Empates: `= max(...)` devuelve a todos los empatados (`LIMIT 1` dejaría uno por fuera). |
+| 3. Lectores morosos | el lector, una vez | `EXISTS` evita repetir al lector que tiene varios préstamos en mora. |
+| 4. Préstamos en mora | el préstamo | Nombre, correo y teléfono del lector, libro, fecha límite y días de mora, de mayor a menor mora. Es la lista del botón "Enviar notificación". |
+
+### Cómo cambia respecto al demo del profesor
+
+- **El préstamo apunta a un ejemplar**, no al libro: cada reporte lleva un join más (`prestamo → ejemplar → libro`) y el reporte 1 agrupa por libro, no por copia.
+- **Los datos del lector** (nombre, correo, teléfono) están en `cuenta`, no en una tabla `lector`.
+- **La fecha esperada de devolución** es `prestamo.fecha_limite`.
+- **Un préstamo abierto** es el que no tiene fila en `devolucion`; se resuelve con `NOT EXISTS`.
+
+## Datos de prueba
+
+`postgres/scripts/datos-prueba.sql` inserta 29 préstamos (21 devueltos y 8 abiertos) sobre la semilla de 32 libros y 20 lectores. Los préstamos abiertos usan `prestamo.estado = 'en_uso'` y los devueltos `'devuelto'`; los ejemplares con préstamo abierto quedan en `'prestado'`. Las fechas son relativas a `CURRENT_DATE`, así que la mora da lo mismo el día de la sustentación. El resultado esperado de cada caso está escrito en el encabezado del script, antes de las consultas.
+
+| # | Caso | Reporte | Qué debe pasar |
+|---|---|---|---|
+| 1 | Libro que nadie ha prestado | 1 | No aparece: ya hay 22 libros con préstamos |
+| 2 | Empate en el último puesto del top | 1 | Salen los 18 libros empatados con 1 préstamo (22 filas en total) |
+| 3 | Dos lectores empatados en el primer lugar | 2 | Salen Mariana y Santiago, con 4 devueltos cada uno |
+| 4 | Lector con préstamos abiertos y ninguno devuelto | 2 | Juan David no sale, aunque tiene 5 préstamos |
+| 5 | Préstamo devuelto después de la fecha límite | 3 y 4 | No cuenta como mora |
+| 6 | Préstamo abierto que vence hoy | 3 y 4 | No está en mora (regla `<`) |
+| 7 | Lector con dos préstamos en mora | 3 y 4 | Una vez en el reporte 3 y dos veces en el 4 |
+| 8 | Lector sin ningún préstamo | Todos | No aparece en ningún reporte |
+
+Resultado con los datos de prueba: el reporte 1 devuelve 22 filas, el 2 devuelve 2, el 3 devuelve 3 y el 4 devuelve 4. Los 8 casos coincidieron con lo esperado en la primera corrida. La tabla de verificación completa, con la salida de `psql`, está en [`docs/verificacion-parte-b.md`](docs/verificacion-parte-b.md).
+
+## Checkpoint del Hito 2
+
+| Pieza | Dónde quedó | Sesión |
+|---|---|---|
+| Esquema que corre limpio desde `postgres/init/` con la base vacía | `postgres/init/01_esquema.sql` | S14 |
+| Carga de libros y lectores desde CSV, con el semilla y con un CSV propio | `postgres/scripts/carga-*.sql` y `postgres/scripts/datos/` | S14 |
+| Validación de filas mal formadas y duplicados, con bitácora | Los mismos scripts de carga y las tablas de criterios de este README | S14 |
+| Las consultas de los 4 reportes, documentadas | `postgres/scripts/reportes.sql` (y `datos-prueba.sql`) | S16 |
+
 ## Decisiones de diseño
 
 - **Bitácora fuera del modelo.** `carga.rechazo_carga` vive en un esquema aparte (`carga`) para no alterar el modelo de la biblioteca. Las tablas de paso son temporales y se borran al terminar cada carga.
 - **Correo y teléfono obligatorios** en `cuenta`, con `CHECK` de formato, porque la notificación de mora debe mostrar nombre, correo y teléfono del lector.
 - **Ejemplares.** El CSV trae una cantidad; el esquema guarda una fila por copia, con `codigo = isbn-número de copia` y `estado = 'disponible'`.
 - **Lectores.** Se cargan en `cuenta` con el rol `lector`. El `usuario` es el documento y la contraseña inicial es el documento con hash bcrypt, nunca en texto plano.
+- **Devolución.** `devolucion` usa `id_prestamo` como llave primaria y a la vez foránea hacia `prestamo`: hay como máximo una devolución por préstamo y no tiene id propio.
+- **Notificación sin tabla.** La notificación es una funcionalidad del sistema y no necesita tabla; el reporte de préstamos en mora es una consulta.
+- **Esquemas en los scripts de carga.** Trabajan con `search_path` en `carga, public` (`public` para que `crypt` y `gen_salt` de `pgcrypto` sigan disponibles) y escriben `biblioteca.` delante de cada tabla del modelo; solo la bitácora vive en `carga`.
+- **Datos de prueba repetibles.** Los préstamos de prueba los registra una cuenta de bibliotecario `bib_prueba`; al volver a correr `datos-prueba.sql`, primero se borra todo lo que esa cuenta registró y se vuelve a crear.
 
 ## Archivos de salida
 
@@ -226,3 +304,6 @@ Los registros de consola de `psql` están en `docs/salidas/`:
 | `03-lectores-con-errores.txt` | Detección de los 6 errores en lectores |
 | `04-csv-propio.txt` | CSV propio: 5 cargadas y 3 rechazadas |
 | `05-prueba-ultima-linea-defensa.txt` | Evidencia del `ROLLBACK` al comentar una regla del `CASE` |
+| `06-reportes-parte-b.txt` | Salida de los cuatro reportes con los datos de prueba (S16) |
+
+La tabla de verificación de la parte B está en `docs/verificacion-parte-b.md` (fuera de `salidas/`).
