@@ -15,14 +15,14 @@
 \else
   \set archivo '/scripts/datos/libros_semilla.csv'
 \endif
-
-SET search_path TO biblioteca, public;
+CREATE SCHEMA IF NOT EXISTS carga;
+SET search_path TO carga, public;
 
 BEGIN;
 
 -- Bitacora de rechazos (no es parte del modelo del dominio: vive en su propio esquema)
-CREATE SCHEMA IF NOT EXISTS carga;
-CREATE TABLE IF NOT EXISTS carga.rechazo_carga (
+
+CREATE TABLE IF NOT EXISTS rechazo_carga (
   id_rechazo integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   fecha      timestamp NOT NULL DEFAULT now(),
   archivo    text      NOT NULL,
@@ -70,7 +70,7 @@ UPDATE stg_libro SET motivo = CASE
                                                         THEN 'año fuera de rango'
   WHEN ejemplares_disponibles !~ '^-?[0-9]{1,4}$'       THEN 'ejemplares no numérico'
   WHEN ejemplares_disponibles::integer < 0              THEN 'ejemplares negativo'
-  WHEN EXISTS (SELECT 1 FROM libro l WHERE l.isbn = stg_libro.isbn)
+  WHEN EXISTS (SELECT 1 FROM biblioteca.libro l WHERE l.isbn = stg_libro.isbn)
                                                         THEN 'isbn ya existe en el catálogo'
 END;
 
@@ -82,27 +82,27 @@ WHERE s.motivo IS NULL
 
 -- Pasar las filas validas a las tablas finales.
 -- Categorias que no existan todavia.
-INSERT INTO categoria (nombre)
+INSERT INTO biblioteca.categoria (nombre)
 SELECT DISTINCT categoria FROM stg_libro WHERE motivo IS NULL
 ON CONFLICT (nombre) DO NOTHING;
 
 -- Libros (la clave de la categoria se busca por nombre).
-INSERT INTO libro (id_categoria, isbn, titulo, autor, anio_publicacion)
+INSERT INTO biblioteca.libro (id_categoria, isbn, titulo, autor, anio_publicacion)
 SELECT c.id_categoria, s.isbn, s.titulo, s.autor, s.anio_publicacion::integer
 FROM stg_libro s
-JOIN categoria c ON c.nombre = s.categoria
+JOIN biblioteca.categoria c ON c.nombre = s.categoria
 WHERE s.motivo IS NULL;
 
 -- Ejemplares: una fila por copia (codigo = isbn-numero de copia, estado inicial 'disponible').
-INSERT INTO ejemplar (id_libro, codigo, estado)
+INSERT INTO biblioteca.ejemplar (id_libro, codigo, estado)
 SELECT l.id_libro, v.isbn || '-' || g.n, 'disponible'
 FROM (SELECT isbn, ejemplares_disponibles::integer AS copias
       FROM stg_libro WHERE motivo IS NULL) v
-JOIN libro l ON l.isbn = v.isbn
+JOIN biblioteca.libro l ON l.isbn = v.isbn
 CROSS JOIN LATERAL generate_series(1, v.copias) AS g(n);
 
 -- Registrar las filas rechazadas en la bitacora.
-INSERT INTO carga.rechazo_carga (archivo, linea, contenido, motivo)
+INSERT INTO rechazo_carga (archivo, linea, contenido, motivo)
 SELECT :'archivo', linea_csv, contenido, motivo
 FROM stg_libro
 WHERE motivo IS NOT NULL;
