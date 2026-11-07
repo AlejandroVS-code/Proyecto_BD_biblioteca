@@ -101,8 +101,8 @@ docker compose exec postgres psql -U curso -d curso -f /scripts/datos-prueba.sql
 # 2. Los cuatro reportes (-P pager=off evita que psql abra el paginador y corte la salida)
 docker compose exec postgres psql -U curso -d curso -P pager=off -f /scripts/reportes.sql
 
-# 3. Guardar la salida como evidencia (en PowerShell)
-docker compose exec -T postgres psql -U curso -d curso -f /scripts/reportes.sql | Out-File -Encoding utf8 docs\salidas\06-reportes-parte-b.txt
+# 3. Guardar la salida como evidencia (en PowerShell; cmd /c conserva las tildes)
+cmd /c "docker compose exec -T postgres psql -U curso -d curso -f /scripts/reportes.sql > docs\salidas\06-reportes-parte-b.txt"
 ```
 
 ## Mapeo CSV → esquema propio
