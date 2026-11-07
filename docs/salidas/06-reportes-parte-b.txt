@@ -1,27 +1,27 @@
-﻿
+
 == Reporte 1. Los 20 libros mas prestados ==
                titulo                | prestamos 
 -------------------------------------+-----------
- Cien a├▒os de soledad                |         4
+ Cien años de soledad                |         4
  Rayuela                             |         3
  Don Quijote de la Mancha            |         2
  Ficciones                           |         2
  1984                                |         1
- Alicia en el pa├¡s de las maravillas |         1
+ Alicia en el país de las maravillas |         1
  Breve historia del tiempo           |         1
  Como agua para chocolate            |         1
  Cosmos                              |         1
- Cr├│nica de una muerte anunciada     |         1
+ Crónica de una muerte anunciada     |         1
  El Aleph                            |         1
- El amor en los tiempos del c├│lera   |         1
+ El amor en los tiempos del cólera   |         1
  El principito                       |         1
- El t├║nel                            |         1
+ El túnel                            |         1
  Fahrenheit 451                      |         1
- La casa de los esp├¡ritus            |         1
+ La casa de los espíritus            |         1
  La sombra del viento                |         1
  Los detectives salvajes             |         1
  Matilda                             |         1
- Pedro P├íramo                        |         1
+ Pedro Páramo                        |         1
  Sapiens: de animales a dioses       |         1
  Un mundo feliz                      |         1
 (22 rows)
@@ -30,26 +30,26 @@
 == Reporte 2. El o los lectores que mas libros han leido (prestamos devueltos) ==
  nombres  |    apellidos    | devueltos 
 ----------+-----------------+-----------
- Mariana  | G├│mez Rojas     |         4
- Santiago | Rodr├¡guez P├®rez |         4
+ Mariana  | Gómez Rojas     |         4
+ Santiago | Rodríguez Pérez |         4
 (2 rows)
 
 
 == Reporte 3. Lectores morosos (cada uno una vez) ==
  documento  |  nombres   |    apellidos     
 ------------+------------+------------------
- 1000000005 | Camila     | Hern├índez Torres
- 1000000003 | Valentina  | L├│pez D├¡az
- 1000000004 | Juan David | Mart├¡nez Ruiz
+ 1000000005 | Camila     | Hernández Torres
+ 1000000003 | Valentina  | López Díaz
+ 1000000004 | Juan David | Martínez Ruiz
 (3 rows)
 
 
 == Reporte 4. Prestamos en mora (lista de notificacion) ==
           lector          |                 correo                 |  telefono  |         titulo          | fecha_limite | dias_mora 
 --------------------------+----------------------------------------+------------+-------------------------+--------------+-----------
- Juan David Mart├¡nez Ruiz | juan.martinez@correo-ejemplo.edu.co    | 3001000004 | Ficciones               | 2026-10-12   |        26
- Valentina L├│pez D├¡az     | valentina.lopez@correo-ejemplo.edu.co  | 3001000003 | La sombra del viento    | 2026-10-22   |        16
- Juan David Mart├¡nez Ruiz | juan.martinez@correo-ejemplo.edu.co    | 3001000004 | Cien a├▒os de soledad    | 2026-11-01   |         6
- Camila Hern├índez Torres  | camila.hernandez@correo-ejemplo.edu.co | 3001000005 | Los detectives salvajes | 2026-11-05   |         2
+ Juan David Martínez Ruiz | juan.martinez@correo-ejemplo.edu.co    | 3001000004 | Ficciones               | 2026-10-12   |        26
+ Valentina López Díaz     | valentina.lopez@correo-ejemplo.edu.co  | 3001000003 | La sombra del viento    | 2026-10-22   |        16
+ Juan David Martínez Ruiz | juan.martinez@correo-ejemplo.edu.co    | 3001000004 | Cien años de soledad    | 2026-11-01   |         6
+ Camila Hernández Torres  | camila.hernandez@correo-ejemplo.edu.co | 3001000005 | Los detectives salvajes | 2026-11-05   |         2
 (4 rows)
 

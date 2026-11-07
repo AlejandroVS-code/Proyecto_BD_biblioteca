@@ -1,5 +1,5 @@
-CREATE SCHEMA
 psql:/scripts/prueba-sin-regla-titulo.sql:18: NOTICE:  schema "carga" already exists, skipping
+CREATE SCHEMA
 SET
 BEGIN
 CREATE TABLE
@@ -11,18 +11,5 @@ SELECT 4
 UPDATE 4
 UPDATE 0
 INSERT 0 0
-INSERT 0 2
-INSERT 0 3
-INSERT 0 2
- cargadas | rechazadas 
-----------+------------
-        2 |          2
-(1 row)
-
- linea |    motivo    |                  contenido                   
--------+--------------+----------------------------------------------
-     4 | título vacío | 9780000000203,,Autor Tres,Novela,2003,1
-     5 | autor vacío  | 9780000000204,Libro sin autor,,Novela,2004,1
-(2 rows)
-
-COMMIT
+psql:/scripts/prueba-sin-regla-titulo.sql:94: ERROR:  new row for relation "libro" violates check constraint "libro_check"
+DETAIL:  Failing row contains (40, 7, 9780000000203, , Autor Tres, null, 2003, t).
