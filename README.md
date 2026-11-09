@@ -30,12 +30,14 @@ El esquema de la biblioteca como script de arranque del entorno Docker y la carg
 │       ├── carga-libros.sql
 │       ├── carga-lectores.sql
 │       ├── prueba-sin-regla-titulo.sql # copia de carga-libros.sql con una regla comentada
-│       ├── parte-a.sql                 # las 11 consultas de la parte A (esquema tienda)
 │       ├── datos-prueba.sql            # préstamos de prueba para los 8 casos (parte B)
 │       ├── reportes.sql                # los cuatro reportes con sus decisiones (parte B)
 │       └── datos/                      # CSV semilla, CSV propio y CSV de la prueba
+├── entregas/
+│   └── S16/
+│       ├── consultas.sql               # las 11 consultas de la parte A (esquema tienda)
+│       └── verificacion-parte-b.md     # tabla de verificación de la parte B
 └── docs/
-    ├── verificacion-parte-b.md         # tabla de verificación de la parte B (S16)
     └── salidas/                        # salida de psql de cada carga
         └── 06-reportes-parte-b.txt     # salida de psql de los cuatro reportes (S16)
 ```
@@ -271,7 +273,7 @@ Los reportes están en `postgres/scripts/reportes.sql`; cada consulta lleva enci
 | 7 | Lector con dos préstamos en mora | 3 y 4 | Una vez en el reporte 3 y dos veces en el 4 |
 | 8 | Lector sin ningún préstamo | Todos | No aparece en ningún reporte |
 
-Resultado con los datos de prueba: el reporte 1 devuelve 22 filas, el 2 devuelve 2, el 3 devuelve 3 y el 4 devuelve 4. Los 8 casos coincidieron con lo esperado en la primera corrida. La tabla de verificación completa, con la salida de `psql`, está en [`docs/verificacion-parte-b.md`](docs/verificacion-parte-b.md).
+Resultado con los datos de prueba: el reporte 1 devuelve 22 filas, el 2 devuelve 2, el 3 devuelve 3 y el 4 devuelve 4. Los 8 casos coincidieron con lo esperado en la primera corrida. La tabla de verificación completa, con la salida de `psql`, está en [`entregas/S16/verificacion-parte-b.md`](entregas/S16/verificacion-parte-b.md).
 
 ## Checkpoint del Hito 2
 
@@ -306,4 +308,4 @@ Los registros de consola de `psql` están en `docs/salidas/`:
 | `05-prueba-ultima-linea-defensa.txt` | Evidencia del `ROLLBACK` al comentar una regla del `CASE` |
 | `06-reportes-parte-b.txt` | Salida de los cuatro reportes con los datos de prueba (S16) |
 
-La tabla de verificación de la parte B está en `docs/verificacion-parte-b.md` (fuera de `salidas/`).
+La tabla de verificación de la parte B está en `entregas/S16/verificacion-parte-b.md` (fuera de `docs/`).
