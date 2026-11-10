@@ -107,6 +107,34 @@ docker compose exec postgres psql -U curso -d curso -P pager=off -f /scripts/rep
 cmd /c "docker compose exec -T postgres psql -U curso -d curso -f /scripts/reportes.sql > docs\salidas\06-reportes-parte-b.txt"
 ```
 
+### 4. Guardar la salida de cada carga (`docs/salidas/`)
+
+Los archivos `01` a `05` de `docs/salidas/` se generan con la base recién creada (sección 1), en este orden. `cmd /c` guarda el texto tal como lo entrega `psql` y conserva las tildes; con `Out-File` salen dañadas. La salida `06` se guarda con el comando de la sección 3.
+
+```powershell
+New-Item -ItemType Directory -Force docs\salidas
+
+# 01: libros limpio
+cmd /c "docker compose exec -T postgres psql -U curso -d curso -f /scripts/carga-libros.sql > docs\salidas\01-libros-limpio.txt"
+
+# 02: libros con errores
+cmd /c "docker compose exec -T postgres psql -U curso -d curso -v archivo=/scripts/datos/libros_semilla_con_errores.csv -f /scripts/carga-libros.sql > docs\salidas\02-libros-con-errores.txt"
+
+# lectores limpio (hay que correrlo antes del de errores; su salida no se guarda)
+docker compose exec postgres psql -U curso -d curso -f /scripts/carga-lectores.sql
+
+# 03: lectores con errores
+cmd /c "docker compose exec -T postgres psql -U curso -d curso -v archivo=/scripts/datos/lectores_semilla_con_errores.csv -f /scripts/carga-lectores.sql > docs\salidas\03-lectores-con-errores.txt"
+
+# 04: CSV propio
+cmd /c "docker compose exec -T postgres psql -U curso -d curso -v archivo=/scripts/datos/libros_propio.csv -f /scripts/carga-libros.sql > docs\salidas\04-csv-propio.txt"
+
+# 05: última línea de defensa (después de la 04; 2>&1 captura también el ERROR)
+cmd /c "docker compose exec -T postgres psql -U curso -d curso -v archivo=/scripts/datos/prueba_titulo_vacio.csv -f /scripts/prueba-sin-regla-titulo.sql > docs\salidas\05-prueba-ultima-linea-defensa.txt 2>&1"
+```
+
+`prueba-sin-regla-titulo.sql` ya trae comentada la regla `WHEN titulo = ''`. Para leer un archivo guardado sin que PowerShell dañe las tildes: `Get-Content docs\salidas\02-libros-con-errores.txt -Encoding UTF8`.
+
 ## Mapeo CSV → esquema propio
 
 Todas las tablas están en el esquema `biblioteca`; la bitácora está en `carga.rechazo_carga`.
@@ -308,4 +336,4 @@ Los registros de consola de `psql` están en `docs/salidas/`:
 | `05-prueba-ultima-linea-defensa.txt` | Evidencia del `ROLLBACK` al comentar una regla del `CASE` |
 | `06-reportes-parte-b.txt` | Salida de los cuatro reportes con los datos de prueba (S16) |
 
-La tabla de verificación de la parte B está en `entregas/S16/verificacion-parte-b.md` (fuera de `docs/`).
+La tabla de verificación de la parte B está en `entregas/S16/verificacion-parte-b.md`.
