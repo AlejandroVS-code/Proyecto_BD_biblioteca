@@ -47,9 +47,9 @@
 == Reporte 4. Prestamos en mora (lista de notificacion) ==
           lector          |                 correo                 |  telefono  |         titulo          | fecha_limite | dias_mora 
 --------------------------+----------------------------------------+------------+-------------------------+--------------+-----------
- Juan David Martínez Ruiz | juan.martinez@correo-ejemplo.edu.co    | 3001000004 | Ficciones               | 2026-10-15   |        26
- Valentina López Díaz     | valentina.lopez@correo-ejemplo.edu.co  | 3001000003 | La sombra del viento    | 2026-10-25   |        16
- Juan David Martínez Ruiz | juan.martinez@correo-ejemplo.edu.co    | 3001000004 | Cien años de soledad    | 2026-11-04   |         6
- Camila Hernández Torres  | camila.hernandez@correo-ejemplo.edu.co | 3001000005 | Los detectives salvajes | 2026-11-08   |         2
+ Juan David Martínez Ruiz | juan.martinez@correo-ejemplo.edu.co    | 3001000004 | Ficciones               | 2026-10-25   |        26
+ Valentina López Díaz     | valentina.lopez@correo-ejemplo.edu.co  | 3001000003 | La sombra del viento    | 2026-11-04   |        16
+ Juan David Martínez Ruiz | juan.martinez@correo-ejemplo.edu.co    | 3001000004 | Cien años de soledad    | 2026-11-14   |         6
+ Camila Hernández Torres  | camila.hernandez@correo-ejemplo.edu.co | 3001000005 | Los detectives salvajes | 2026-11-18   |         2
 (4 rows)
 

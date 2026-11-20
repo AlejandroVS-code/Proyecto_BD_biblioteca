@@ -1,0 +1,103 @@
+SET
+
+=== (a) EVIDENCIA ANTES ===
+E1. Correos repetidos (debe dar 0 filas; si da filas, el UNIQUE fallaria):
+ correo | count 
+--------+-------
+(0 rows)
+
+E4. ejemplar.estado frente a los prestamos abiertos (S19: disponible/f = 86, prestado/t = 8):
+   estado   | con_prestamo_abierto | count 
+------------+----------------------+-------
+ disponible | f                    |    86
+ prestado   | t                    |     8
+(2 rows)
+
+E5. prestamo.estado frente a la existencia de devolucion (S19: devuelto/t = 21, en_uso/f = 8):
+  estado  | tiene_devolucion | count 
+----------+------------------+-------
+ devuelto | t                |    21
+ en_uso   | f                |     8
+(2 rows)
+
+E8. Valores que hay hoy en devolucion.estado_ejemplar (todos deben poderse traducir):
+ estado_ejemplar | count 
+-----------------+-------
+ disponible      |    21
+(1 row)
+
+Conteos ANTES:
+ libros | ejemplares | prestamos | devoluciones 
+--------+------------+-----------+--------------
+     32 |         94 |        29 |           21
+(1 row)
+
+BEGIN
+SELECT 29
+SELECT 94
+CREATE INDEX
+ALTER TABLE
+UPDATE 94
+ALTER TABLE
+UPDATE 21
+ALTER TABLE
+CREATE VIEW
+CREATE VIEW
+CREATE VIEW
+DO
+ALTER TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+COMMIT
+
+=== (c) EVIDENCIA DESPUES ===
+Conteos DESPUES (deben ser iguales a los de antes):
+ libros | ejemplares | prestamos | devoluciones 
+--------+------------+-----------+--------------
+     32 |         94 |        29 |           21
+(1 row)
+
+Estado del prestamo, ahora calculado (esperado: devuelto 21, en_uso 8):
+  estado  | count 
+----------+-------
+ devuelto |    21
+ en_uso   |     8
+(2 rows)
+
+Ejemplares, ahora calculado (esperado: 94 en buen estado = 86 disponibles + 8 prestados):
+ estado | prestado | disponible | count 
+--------+----------+------------+-------
+ bueno  | f        | t          |    86
+ bueno  | t        | f          |     8
+(2 rows)
+
+Columnas de prestamo (ya no existe estado):
+     column_name     
+---------------------
+ id_prestamo
+ id_usuario_lector
+ id_usuario_registra
+ id_ejemplar
+ fecha_prestamo
+ fecha_limite
+(6 rows)
+
+Catalogo con disponibilidad (primeros 5 libros):
+              titulo               | ejemplares | disponibles 
+-----------------------------------+------------+-------------
+ Cien años de soledad              |          4 |           3
+ El amor en los tiempos del cólera |          3 |           3
+ Crónica de una muerte anunciada   |          2 |           2
+ Rayuela                           |          3 |           2
+ Pedro Páramo                      |          2 |           2
+(5 rows)
+
+E1 despues: el UNIQUE rechaza un correo repetido en cualquier combinacion de mayusculas.
+(Se prueba dentro de una transaccion que se deshace; el ERROR de abajo es el resultado esperado.)
+BEGIN
+psql:/scripts/normalizacion.sql:189: ERROR:  duplicate key value violates unique constraint "cuenta_correo_uq"
+DETAIL:  Key (lower(correo::text))=(mariana.gomez@correo-ejemplo.edu.co) already exists.
+ROLLBACK
+
+Siguiente paso: volver a correr datos-prueba.sql y reportes.sql (esperado: 22, 2, 3 y 4 filas).

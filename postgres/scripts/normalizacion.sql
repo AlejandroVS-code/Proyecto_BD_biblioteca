@@ -11,7 +11,7 @@
 -- Uso (desde la carpeta del docker-compose, con las cargas y datos-prueba.sql ya corridos):
 --   docker compose exec -T postgres psql -U curso -d curso -P pager=off -f /scripts/normalizacion.sql
 -- Guardar la salida como evidencia:
---   cmd /c "docker compose exec -T postgres psql -U curso -d curso -P pager=off -f /scripts/normalizacion.sql > docs\salidas\09-migracion-hito3.txt 2>&1"
+--   cmd /c "docker compose exec -T postgres psql -U curso -d curso -P pager=off -f /scripts/normalizacion.sql > docs\salidas\07-migracion-hito3.txt 2>&1"
 --
 -- Seguridad: todo ocurre en UNA transaccion. Si cualquier verificacion falla, el script se detiene
 -- con un ERROR y no se guarda nada (ROLLBACK automatico al cerrarse la sesion).

@@ -1,7 +1,7 @@
-# S14 y S16 / Hito 2: Esquema, carga desde CSV y reportes
+# S14, S16, S19 y S20 / Hitos 2 y 3: Esquema, carga desde CSV, reportes y normalización
 
 **Asignatura:** Bases de Datos (750006C), Universidad del Valle
-**Módulo 4, Sesiones 14 y 16** · Grupo 2
+**Sesiones 14, 16, 19 y 20** · Grupo 2
 
 ## Integrantes del equipo
 
@@ -9,12 +9,11 @@
 |---|---|
 | Alejandro Valencia | 2515411-2724 |
 | Nicolas Velasco | 2521994-2724 |
-| Daniel Toro | 2521005-2724 |
 | María Alejandra Pizarro | 2519474-2724 |
 
 ## Qué contiene este repositorio
 
-El esquema de la biblioteca como script de arranque del entorno Docker y la carga de los CSV semilla (libros y lectores), incluidos los archivos con errores intencionales. La carga sigue el patrón **tabla de paso → validación → tabla final → bitácora de rechazos**, todo dentro de una transacción. Para S16 incluye además los datos de prueba y los cuatro reportes de préstamos (más prestados, lectores que más leen, morosos y préstamos en mora), con su tabla de verificación.
+El esquema de la biblioteca como script de arranque del entorno Docker y la carga de los CSV semilla (libros y lectores), incluidos los archivos con errores intencionales. La carga sigue el patrón **tabla de paso → validación → tabla final → bitácora de rechazos**, todo dentro de una transacción. Para S16 incluye además los datos de prueba y los cuatro reportes de préstamos (más prestados, lectores que más leen, morosos y préstamos en mora), con su tabla de verificación. Para S19 y S20 (Hito 3) incluye el análisis de normalización del esquema, el esquema ya normalizado, la migración `normalizacion.sql` que lleva una base del Hito 2 a ese esquema y el documento de normalización.
 
 ## Estructura
 
@@ -24,22 +23,34 @@ El esquema de la biblioteca como script de arranque del entorno Docker y la carg
 ├── docker-compose.yml
 ├── postgres/
 │   ├── init/
-│   │   ├── 01_esquema.sql              # esquema (corre solo con la base vacía)
+│   │   ├── 01_esquema.sql              # esquema normalizado, Hito 3 (corre solo con la base vacía)
 │   │   └── 02_roles.sql                # los 4 perfiles: lector, bibliotecario, administrador, auditor
 │   └── scripts/
 │       ├── carga-libros.sql
 │       ├── carga-lectores.sql
-│       ├── prueba-sin-regla-titulo.sql # copia de carga-libros.sql con una regla comentada
-│       ├── datos-prueba.sql            # préstamos de prueba para los 8 casos (parte B)
-│       ├── reportes.sql                # los cuatro reportes con sus decisiones (parte B)
+│       ├── prueba-sin-regla-titulo.sql # copia modificada de carga-libros.sql con una regla comentada
+│       ├── datos-prueba.sql            # préstamos de prueba para los 8 casos (parte B de S16)
+│       ├── reportes.sql                # los cuatro reportes con sus decisiones (parte B de S16)
+│       ├── normalizacion.sql           # migración del Hito 3: de la base del Hito 2 a la normalizada (S20)
 │       └── datos/                      # CSV semilla, CSV propio y CSV de la prueba
 ├── entregas/
-│   └── S16/
-│       ├── consultas.sql               # las 11 consultas de la parte A (esquema tienda)
-│       └── verificacion-parte-b.md     # tabla de verificación de la parte B
+│   ├── S16/
+│   │   ├── consultas.sql               # las 11 consultas de la parte A (esquema tienda)
+│   │   └── verificacion-parte-b.md     # tabla de verificación de la parte B
+│   ├── S19/
+│   │   └── parte-b-normalizacion.md    # análisis de normalización del esquema del proyecto (antes del Hito 3)
+│   └── S20/
+│       └── hito3-normalizacion.md      # documento de normalización (Hito 3)
 └── docs/
-    └── salidas/                        # salida de psql de cada carga
-        └── 06-reportes-parte-b.txt     # salida de psql de los cuatro reportes (S16)
+    └── salidas/                        # salida de psql de cada carga y de la migración
+        ├── 01-libros-limpio.txt
+        ├── 02-libros-con-errores.txt
+        ├── 03-lectores-con-errores.txt
+        ├── 04-csv-propio.txt
+        ├── 05-prueba-ultima-linea-defensa.txt
+        ├── 06-reportes-parte-b.txt     # reportes sobre una base creada con el init del Hito 3 (S16)
+        ├── 07-migracion-hito3.txt      # salida de la migración normalizacion.sql (Hito 3)
+        └── 08-reportes-hito3.txt       # reportes sobre la base ya migrada (Hito 3)
 ```
 
 ## Guía de ejecución
@@ -104,12 +115,12 @@ docker compose exec postgres psql -U curso -d curso -f /scripts/datos-prueba.sql
 docker compose exec postgres psql -U curso -d curso -P pager=off -f /scripts/reportes.sql
 
 # 3. Guardar la salida como evidencia (en PowerShell; cmd /c conserva las tildes)
-cmd /c "docker compose exec -T postgres psql -U curso -d curso -f /scripts/reportes.sql > docs\salidas\06-reportes-parte-b.txt"
+cmd /c "docker compose exec -T postgres psql -U curso -d curso -P pager=off -f /scripts/reportes.sql > docs\salidas\06-reportes-parte-b.txt"
 ```
 
 ### 4. Guardar la salida de cada carga (`docs/salidas/`)
 
-Los archivos `01` a `05` de `docs/salidas/` se generan con la base recién creada (sección 1), en este orden. `cmd /c` guarda el texto tal como lo entrega `psql` y conserva las tildes; con `Out-File` salen dañadas. La salida `06` se guarda con el comando de la sección 3.
+Los archivos `01` a `05` de `docs/salidas/` se generan con la base recién creada (sección 1), en este orden. `cmd /c` guarda el texto tal como lo entrega `psql` y conserva las tildes; con `Out-File` salen dañadas. La salida `06` se guarda con el comando de la sección 3, y las salidas `07` y `08` con los comandos de la sección 5.
 
 ```powershell
 New-Item -ItemType Directory -Force docs\salidas
@@ -133,7 +144,54 @@ cmd /c "docker compose exec -T postgres psql -U curso -d curso -v archivo=/scrip
 cmd /c "docker compose exec -T postgres psql -U curso -d curso -v archivo=/scripts/datos/prueba_titulo_vacio.csv -f /scripts/prueba-sin-regla-titulo.sql > docs\salidas\05-prueba-ultima-linea-defensa.txt 2>&1"
 ```
 
-`prueba-sin-regla-titulo.sql` ya trae comentada la regla `WHEN titulo = ''`. Para leer un archivo guardado sin que PowerShell dañe las tildes: `Get-Content docs\salidas\02-libros-con-errores.txt -Encoding UTF8`.
+`prueba-sin-regla-titulo.sql` es una copia modificada de `carga-libros.sql` que ya trae comentada la regla `WHEN titulo = ''`. Para leer un archivo guardado sin que PowerShell dañe las tildes: `Get-Content docs\salidas\02-libros-con-errores.txt -Encoding UTF8`.
+
+### 5. Hito 3: esquema normalizado y migración (S20)
+
+Desde el Hito 3, `01_esquema.sql` crea el esquema ya normalizado: una base nueva (sección 1) no necesita nada más. `normalizacion.sql` solo sirve para llevar una base **que ya tiene el esquema del Hito 2** al esquema nuevo, y no se puede correr dos veces sobre la misma base (la segunda vez `prestamo.estado` ya no existe).
+
+**Probar el init sin borrar la base del grupo.** Se crea una base aparte, se corren ahí `01_esquema.sql` y `02_roles.sql` y se borra. Ojo: `01_esquema.sql` empieza con `DROP SCHEMA biblioteca CASCADE`, así que nunca debe correrse contra `curso` si tiene datos.
+
+```bash
+docker compose exec postgres psql -U curso -d curso -c "CREATE DATABASE prueba_init;"
+docker compose exec postgres psql -U curso -d prueba_init -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/01_esquema.sql
+docker compose exec postgres psql -U curso -d prueba_init -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/02_roles.sql
+
+# Tablas, las tres vistas y los 4 roles
+docker compose exec postgres psql -U curso -d prueba_init -c '\dt biblioteca.*' -c '\dv biblioteca.*' -c 'SELECT nombre FROM biblioteca.rol;'
+
+docker compose exec postgres psql -U curso -d curso -c "DROP DATABASE prueba_init;"
+```
+
+**Reproducir la migración (salidas 07 y 08).** La migración parte de la base tal como quedó en el Hito 2, con `prestamo.estado` y con `ejemplar.estado` en `'disponible'` o `'prestado'`. Esa versión de `01_esquema.sql`, de las cargas y de `datos-prueba.sql` está en el tag `hito2` (`git push origin hito2` lo sube al repositorio). La versión nueva de `datos-prueba.sql` ya no llena `prestamo.estado` y no sirve sobre el esquema viejo. Antes de empezar, dejar todo lo del Hito 3 guardado con `git commit` en la rama `hito3`.
+
+```powershell
+git switch hito3
+docker compose down
+git switch --detach hito2          # trae init/ y scripts/ del Hito 2
+Remove-Item -Recurse -Force postgres\data\*
+docker compose up -d --wait postgres   # el init del Hito 2 crea el esquema con prestamo.estado
+docker compose exec postgres psql -U curso -d curso -f /scripts/carga-libros.sql
+docker compose exec postgres psql -U curso -d curso -f /scripts/carga-lectores.sql
+docker compose exec postgres psql -U curso -d curso -f /scripts/datos-prueba.sql
+git switch hito3                   # vuelve a la versión del Hito 3 (trae normalizacion.sql)
+cmd /c "docker compose exec -T postgres psql -U curso -d curso -P pager=off -f /scripts/normalizacion.sql > docs\salidas\07-migracion-hito3.txt 2>&1"
+```
+
+En la salida 07, antes de migrar, deben verse `disponible`/`f` = 86 y `prestado`/`t` = 8 (E4), `devuelto` = 21 y `en_uso` = 8 (E5), y 32 libros, 94 ejemplares, 29 préstamos y 21 devoluciones. Son los conteos de la semilla, por eso la migración se corre **antes** de cargar `libros_propio.csv`. Si alguna verificación falla, el script se detiene y no guarda nada. Después de migrar se comprueba que los reportes siguen igual (esperado: 22, 2, 3 y 4 filas) y se guarda la salida 08:
+
+```powershell
+docker compose exec postgres psql -U curso -d curso -f /scripts/datos-prueba.sql
+cmd /c "docker compose exec -T postgres psql -U curso -d curso -P pager=off -f /scripts/reportes.sql > docs\salidas\08-reportes-hito3.txt"
+```
+
+La salida 06 (reportes sobre una base creada desde el init del Hito 3) y la 08 (reportes sobre la base migrada) deben ser iguales: así se comprueba que migrar y crear desde cero llevan al mismo resultado.
+
+**Medir la consulta del catálogo** (la que justifica no desnormalizar; el resultado está en el documento del Hito 3, sección 5):
+
+```bash
+docker compose exec postgres psql -U curso -d curso -P pager=off -c 'EXPLAIN ANALYZE SELECT * FROM biblioteca.libro_disponibilidad;'
+```
 
 ## Mapeo CSV → esquema propio
 
@@ -148,7 +206,7 @@ Todas las tablas están en el esquema `biblioteca`; la bitácora está en `carga
 | `autor` | `libro.autor` | `trim` | no vacío (`autor vacío`) |
 | `categoria` | `categoria.nombre` → `libro.id_categoria` | alta con `ON CONFLICT (nombre) DO NOTHING` y búsqueda de la clave por nombre | no vacía (`categoría vacía`) |
 | `anio_publicacion` | `libro.anio_publicacion` | `::integer` | solo dígitos (`año no numérico`); entre 1450 y 2100 (`año fuera de rango`) |
-| `ejemplares_disponibles` | `ejemplar` (una fila por copia) | `generate_series(1, n)`; `codigo = isbn-n`; `estado = 'disponible'` | entero de hasta 4 dígitos (`ejemplares no numérico`); mayor o igual a 0 (`ejemplares negativo`) |
+| `ejemplares_disponibles` | `ejemplar` (una fila por copia) | `generate_series(1, n)`; `codigo = isbn-n`; `estado = 'bueno'` (condición física; si la copia está prestada se calcula en la vista `ejemplar_con_disponibilidad`) | entero de hasta 4 dígitos (`ejemplares no numérico`); mayor o igual a 0 (`ejemplares negativo`) |
 | *(estructura)* | todo el archivo | n/a | exactamente 6 columnas (`tiene N columnas, se esperaban 6`) |
 
 ### Lectores (`documento, nombres, apellidos, correo, telefono`): todos van a `cuenta`
@@ -197,7 +255,7 @@ Principio: **normalizar sí, adivinar no.** Se corrige lo que se puede arreglar 
 | Categoría que no existe todavía | Crearla y usar su clave | La categoría es un dato válido del catálogo. |
 | ISBN repetido dentro del mismo archivo | Conservar el primero, rechazar el resto | La copia va a la bitácora. |
 | Documento o correo repetido dentro del archivo | Conservar el primero, rechazar el resto | Un documento identifica a una sola persona. |
-| Correo ya usado por otra cuenta | Rechazar (`correo ya registrado`) | Cada lector debe tener su correo para las notificaciones. Regla del script; no es una restricción `UNIQUE` del esquema. |
+| Correo ya usado por otra cuenta | Rechazar (`correo ya registrado`) | Cada lector debe tener su correo para las notificaciones. La carga lo rechaza con un motivo legible y además lo respalda el índice único `cuenta_correo_uq` (sobre `lower(correo)`) del esquema. |
 
 ## Preguntas del laboratorio y resultados
 
@@ -264,11 +322,12 @@ Los reportes están en `postgres/scripts/reportes.sql`; cada consulta lleva enci
 
 ### Reglas del grupo
 
-- Un préstamo está **abierto** si no tiene fila en `devolucion` (no se usa `prestamo.estado`, que sin el trigger del Hito 4 no se actualiza sola).
+- Un préstamo está **abierto** si no tiene fila en `devolucion` (desde el Hito 3 `prestamo.estado` ya no existe: el estado se calcula en la vista `prestamo_con_estado`).
 - **Mora:** préstamo abierto con `fecha_limite < CURRENT_DATE`. El préstamo que vence hoy **no** está en mora.
 - Un préstamo devuelto después de su `fecha_limite` ya no es mora: ya se devolvió.
 - **"Libros leídos"** son los préstamos devueltos.
-- Plazo de préstamo: 14 días (`fecha_limite = fecha_prestamo + 14`).
+- Plazo de préstamo: 14 días (`fecha_limite = fecha_prestamo + 14`), con renovaciones permitidas por regla del grupo (una renovación mueve `fecha_limite`).
+- Un ejemplar está **disponible** si su condición física es `bueno` y no tiene un préstamo abierto (vista `ejemplar_con_disponibilidad`).
 
 ### Decisiones por reporte
 
@@ -288,7 +347,7 @@ Los reportes están en `postgres/scripts/reportes.sql`; cada consulta lleva enci
 
 ## Datos de prueba
 
-`postgres/scripts/datos-prueba.sql` inserta 29 préstamos (21 devueltos y 8 abiertos) sobre la semilla de 32 libros y 20 lectores. Los préstamos abiertos usan `prestamo.estado = 'en_uso'` y los devueltos `'devuelto'`; los ejemplares con préstamo abierto quedan en `'prestado'`. Las fechas son relativas a `CURRENT_DATE`, así que la mora da lo mismo el día de la sustentación. El resultado esperado de cada caso está escrito en el encabezado del script, antes de las consultas.
+`postgres/scripts/datos-prueba.sql` inserta 29 préstamos (21 devueltos y 8 abiertos) sobre la semilla de 32 libros y 20 lectores. Un préstamo devuelto tiene su fila en `devolucion` y uno abierto no la tiene; si una copia está prestada se calcula en la vista `ejemplar_con_disponibilidad`, no se guarda. Las fechas son relativas a `CURRENT_DATE`, así que la mora da lo mismo el día de la sustentación. El resultado esperado de cada caso está escrito en el encabezado del script, antes de las consultas.
 
 | # | Caso | Reporte | Qué debe pasar |
 |---|---|---|---|
@@ -312,16 +371,31 @@ Resultado con los datos de prueba: el reporte 1 devuelve 22 filas, el 2 devuelve
 | Validación de filas mal formadas y duplicados, con bitácora | Los mismos scripts de carga y las tablas de criterios de este README | S14 |
 | Las consultas de los 4 reportes, documentadas | `postgres/scripts/reportes.sql` (y `datos-prueba.sql`) | S16 |
 
+## Checkpoint del Hito 3
+
+| Pieza | Dónde quedó | Sesión |
+|---|---|---|
+| Análisis de formas normales con dependencias funcionales | [`entregas/S20/hito3-normalizacion.md`](entregas/S20/hito3-normalizacion.md), secciones 2 y 3; análisis completo en [`entregas/S19/parte-b-normalizacion.md`](entregas/S19/parte-b-normalizacion.md) | S18, S19 |
+| Corrección de anomalías o desnormalización justificada | El mismo documento, secciones 4 y 5 (con la medición de `EXPLAIN ANALYZE`); `postgres/scripts/normalizacion.sql`; salida en `docs/salidas/07-migracion-hito3.txt` | S19, S20 |
+| Esquema actualizado y coherente con el análisis | `postgres/init/01_esquema.sql`, probado en una base vacía (sección 5 de la guía); documento, sección 6 | S20 |
+| Reportes de S16 corridos sobre el esquema nuevo (22, 2, 3 y 4 filas) | `postgres/scripts/reportes.sql`; salidas `06-reportes-parte-b.txt` (base nueva) y `08-reportes-hito3.txt` (base migrada) | S16, S20 |
+
 ## Decisiones de diseño
 
 - **Bitácora fuera del modelo.** `carga.rechazo_carga` vive en un esquema aparte (`carga`) para no alterar el modelo de la biblioteca. Las tablas de paso son temporales y se borran al terminar cada carga.
 - **Correo y teléfono obligatorios** en `cuenta`, con `CHECK` de formato, porque la notificación de mora debe mostrar nombre, correo y teléfono del lector.
-- **Ejemplares.** El CSV trae una cantidad; el esquema guarda una fila por copia, con `codigo = isbn-número de copia` y `estado = 'disponible'`.
+- **Ejemplares.** El CSV trae una cantidad; el esquema guarda una fila por copia, con `codigo = isbn-número de copia` y `estado = 'bueno'` (condición física de la copia). El `codigo` lleva el ISBN como etiqueta de la copia física; se acepta como identificador, no como dato derivado.
 - **Lectores.** Se cargan en `cuenta` con el rol `lector`. El `usuario` es el documento y la contraseña inicial es el documento con hash bcrypt, nunca en texto plano.
 - **Devolución.** `devolucion` usa `id_prestamo` como llave primaria y a la vez foránea hacia `prestamo`: hay como máximo una devolución por préstamo y no tiene id propio.
 - **Notificación sin tabla.** La notificación es una funcionalidad del sistema y no necesita tabla; el reporte de préstamos en mora es una consulta.
 - **Esquemas en los scripts de carga.** Trabajan con `search_path` en `carga, public` (`public` para que `crypt` y `gen_salt` de `pgcrypto` sigan disponibles) y escriben `biblioteca.` delante de cada tabla del modelo; solo la bitácora vive en `carga`.
 - **Datos de prueba repetibles.** Los préstamos de prueba los registra una cuenta de bibliotecario `bib_prueba`; al volver a correr `datos-prueba.sql`, primero se borra todo lo que esa cuenta registró y se vuelve a crear.
+- **Lo derivado se calcula, no se guarda (Hito 3).** `prestamo.estado` se eliminó y `ejemplar.estado` quedó solo con la condición física (`bueno`, `dañado`, `perdido`). Si un préstamo está abierto o si una copia está disponible lo dicen las vistas `prestamo_con_estado`, `ejemplar_con_disponibilidad` y `libro_disponibilidad`, así que no hay copia que se pueda desincronizar. Medido con `EXPLAIN ANALYZE`, el catálogo tarda menos de 1 ms con los datos del proyecto, por eso no se desnormalizó. La justificación está en [`entregas/S20/hito3-normalizacion.md`](entregas/S20/hito3-normalizacion.md).
+- **Renovaciones.** Regla del grupo: se permiten, y una renovación mueve `fecha_limite`. Por eso `fecha_limite` se guarda y no se calcula como `fecha_prestamo + 14`.
+- **`devolucion.estado_ejemplar` es un dato histórico.** Dice cómo estaba la copia al devolverla; usa el mismo vocabulario que `ejemplar.estado`, pero no se mantiene sincronizado con él.
+- **Correo único.** `cuenta_correo_uq` es un índice único sobre `lower(correo)`: `Ana@x.co` y `ana@x.co` son el mismo correo, igual que en la carga.
+- **Índices en las llaves foráneas** `ejemplar(id_libro)`, `prestamo(id_ejemplar)` y `prestamo(id_usuario_lector)`. PostgreSQL no los crea solo; el DBMS los mantiene, por eso no son redundancia del modelo.
+- **Pendiente para el Hito 4.** La regla "un ejemplar no puede tener dos préstamos abiertos" aún no tiene respaldo en la base; se hará con un trigger.
 
 ## Archivos de salida
 
@@ -334,6 +408,8 @@ Los registros de consola de `psql` están en `docs/salidas/`:
 | `03-lectores-con-errores.txt` | Detección de los 6 errores en lectores |
 | `04-csv-propio.txt` | CSV propio: 5 cargadas y 3 rechazadas |
 | `05-prueba-ultima-linea-defensa.txt` | Evidencia del `ROLLBACK` al comentar una regla del `CASE` |
-| `06-reportes-parte-b.txt` | Salida de los cuatro reportes con los datos de prueba (S16) |
+| `06-reportes-parte-b.txt` | Los cuatro reportes con los datos de prueba, sobre una base creada con el init del Hito 3 (S16) |
+| `07-migracion-hito3.txt` | Evidencia, verificación y resultado de la migración `normalizacion.sql` (Hito 3) |
+| `08-reportes-hito3.txt` | Los cuatro reportes sobre la base ya migrada (22, 2, 3 y 4 filas) |
 
-La tabla de verificación de la parte B está en `entregas/S16/verificacion-parte-b.md`.
+La tabla de verificación de la parte B de S16 está en `entregas/S16/verificacion-parte-b.md`.
