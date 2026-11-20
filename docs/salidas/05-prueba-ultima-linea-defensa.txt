@@ -2,8 +2,8 @@ psql:/scripts/prueba-sin-regla-titulo.sql:18: NOTICE:  schema "carga" already ex
 CREATE SCHEMA
 SET
 BEGIN
-CREATE TABLE
 psql:/scripts/prueba-sin-regla-titulo.sql:32: NOTICE:  relation "rechazo_carga" already exists, skipping
+CREATE TABLE
 CREATE TABLE
 COPY 5
 DELETE 1

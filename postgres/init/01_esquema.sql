@@ -1,4 +1,7 @@
--- 01_esquema.sql: esquema de la biblioteca (Hito 2)
+-- 01_esquema.sql: esquema de la biblioteca (Hito 2, revisado en el Hito 3 / S20)
+-- Hito 3: prestamo.estado se quito (se calcula en la vista prestamo_con_estado);
+-- ejemplar.estado guarda solo la condicion fisica (la disponibilidad se calcula en una vista);
+-- correo es unico; indices en las FK de los reportes. Detalle: entregas/S20/hito3-normalizacion.md
 -- Se ejecuta solo, una vez, cuando la base se crea vacia.
  
 -- pgcrypto se crea en public (antes de borrar el esquema) para no perderlo con el DROP
@@ -59,9 +62,8 @@ CREATE TABLE "prestamo" (
   "id_usuario_registra" integer NOT NULL,
   "id_ejemplar" integer NOT NULL,
   "fecha_prestamo" date NOT NULL,
-  "fecha_limite" date NOT NULL,
-  "estado" varchar NOT NULL
-); 
+  "fecha_limite" date NOT NULL
+);
  
 CREATE TABLE "devolucion" (
   "id_prestamo" integer PRIMARY KEY,
@@ -93,6 +95,54 @@ ALTER TABLE "devolucion" ADD FOREIGN KEY ("id_prestamo") REFERENCES "prestamo" (
 ALTER TABLE libro ADD CHECK (isbn ~ '^[0-9]{13}$');
 ALTER TABLE libro ADD CHECK (titulo <> '' AND autor <> '');
 ALTER TABLE libro ADD CHECK (anio_publicacion BETWEEN 1450 AND 2100);
-ALTER TABLE ejemplar ADD CHECK (estado IN ('disponible','prestado','dañado','perdido'));
+-- ejemplar.estado = condicion fisica de la copia. Si esta prestada NO se guarda aqui: se calcula (vista).
+ALTER TABLE ejemplar ADD CHECK (estado IN ('bueno','dañado','perdido'));
 ALTER TABLE cuenta ADD CHECK (correo ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$');
 ALTER TABLE cuenta ADD CHECK (telefono ~ '^[0-9]{7,10}$');
+-- estado_ejemplar es historia (como estaba la copia al devolverla); usa el mismo vocabulario que ejemplar.estado.
+ALTER TABLE devolucion ADD CHECK (estado_ejemplar IN ('bueno','dañado','perdido'));
+
+-- ============================================================================================
+-- Hito 3 (S20, parte B): correcciones de normalizacion
+-- ============================================================================================
+
+-- correo es clave candidata (regla del grupo: cada lector tiene su propio correo). Se compara en
+-- minusculas, igual que la carga (lower(trim(...))), para que Ana@x.co y ana@x.co sean el mismo.
+CREATE UNIQUE INDEX cuenta_correo_uq ON cuenta (lower(correo));
+
+-- Indices en las FK que recorren el catalogo y los reportes (PostgreSQL no los crea solo).
+-- No son redundancia del modelo: el DBMS los mantiene y no pueden desincronizarse.
+CREATE INDEX ejemplar_id_libro_idx        ON ejemplar (id_libro);
+CREATE INDEX prestamo_id_ejemplar_idx     ON prestamo (id_ejemplar);
+CREATE INDEX prestamo_id_usuario_lector_idx ON prestamo (id_usuario_lector);
+
+-- Datos derivados: no se guardan, se calculan. Regla del grupo: un prestamo esta abierto si y solo
+-- si no tiene fila en devolucion.
+CREATE VIEW prestamo_con_estado AS
+SELECT p.id_prestamo, p.id_usuario_lector, p.id_usuario_registra, p.id_ejemplar,
+       p.fecha_prestamo, p.fecha_limite,
+       d.fecha_devolucion,
+       CASE WHEN d.id_prestamo IS NULL THEN 'en_uso' ELSE 'devuelto' END AS estado
+FROM   prestamo p
+LEFT JOIN devolucion d ON d.id_prestamo = p.id_prestamo;
+
+-- Una copia esta disponible si esta en buen estado y no tiene un prestamo abierto.
+CREATE VIEW ejemplar_con_disponibilidad AS
+SELECT x.*, (x.estado = 'bueno' AND NOT x.prestado) AS disponible
+FROM (
+    SELECT e.id_ejemplar, e.id_libro, e.codigo, e.estado,
+           EXISTS (SELECT 1
+                   FROM   prestamo p
+                   WHERE  p.id_ejemplar = e.id_ejemplar
+                     AND  NOT EXISTS (SELECT 1 FROM devolucion d WHERE d.id_prestamo = p.id_prestamo)) AS prestado
+    FROM   ejemplar e
+) x;
+
+-- Catalogo: cuantas copias tiene cada libro y cuantas estan disponibles (libros sin copias: 0 y 0).
+CREATE VIEW libro_disponibilidad AS
+SELECT l.id_libro, l.isbn, l.titulo, l.autor,
+       count(v.id_ejemplar)                  AS ejemplares,
+       count(*) FILTER (WHERE v.disponible)  AS disponibles
+FROM   libro l
+LEFT JOIN ejemplar_con_disponibilidad v ON v.id_libro = l.id_libro
+GROUP BY l.id_libro, l.isbn, l.titulo, l.autor;

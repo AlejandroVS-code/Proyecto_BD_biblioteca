@@ -9,7 +9,9 @@
 --
 -- Las fechas son relativas a CURRENT_DATE (p = dias atras del prestamo, d = dias atras de la
 -- devolucion, NULL si sigue abierto). Plazo de 14 dias: fecha_limite = fecha_prestamo + 14.
--- Prestamo abierto = sin fila en devolucion. prestamo.estado: 'en_uso' o 'devuelto'.
+-- Prestamo abierto = sin fila en devolucion. Desde el Hito 3 el estado del prestamo y la
+-- disponibilidad del ejemplar no se guardan: se calculan (vistas prestamo_con_estado y
+-- ejemplar_con_disponibilidad).
 --
 -- ============================================================================================
 -- LO QUE DEBE SALIR (escrito antes de correr nada)
@@ -58,10 +60,6 @@ WHERE r.nombre = 'bibliotecario'
 ON CONFLICT DO NOTHING;
 
 -- Limpiar lo que dejo una corrida anterior.
-UPDATE ejemplar SET estado = 'disponible'
-WHERE id_ejemplar IN (SELECT id_ejemplar FROM prestamo
-                      WHERE id_usuario_registra = (SELECT id_usuario FROM cuenta WHERE usuario = 'bib_prueba'));
-
 DELETE FROM devolucion
 WHERE id_prestamo IN (SELECT id_prestamo FROM prestamo
                       WHERE id_usuario_registra = (SELECT id_usuario FROM cuenta WHERE usuario = 'bib_prueba'));
@@ -118,11 +116,10 @@ INSERT INTO t_prueba (isbn, copia, documento, p, d) VALUES
   ('9780000000021', 1, '1000000010',  35,  28),
   ('9780000000022', 1, '1000000010',  20,  12);
 
-INSERT INTO prestamo (id_usuario_lector, id_usuario_registra, id_ejemplar, fecha_prestamo, fecha_limite, estado)
+INSERT INTO prestamo (id_usuario_lector, id_usuario_registra, id_ejemplar, fecha_prestamo, fecha_limite)
 SELECT lec.id_usuario, bib.id_usuario, e.id_ejemplar,
        CURRENT_DATE - t.p,
-       CURRENT_DATE - t.p + 14,
-       CASE WHEN t.d IS NULL THEN 'en_uso' ELSE 'devuelto' END
+       CURRENT_DATE - t.p + 14
 FROM t_prueba t
 JOIN cuenta   lec ON lec.documento = t.documento
 JOIN cuenta   bib ON bib.usuario = 'bib_prueba'
@@ -143,7 +140,7 @@ BEGIN
 END $$;
 
 INSERT INTO devolucion (id_prestamo, id_usuario_registra, fecha_devolucion, estado_ejemplar)
-SELECT pr.id_prestamo, pr.id_usuario_registra, CURRENT_DATE - t.d, 'disponible'
+SELECT pr.id_prestamo, pr.id_usuario_registra, CURRENT_DATE - t.d, 'bueno'
 FROM t_prueba t
 JOIN libro    l   ON l.isbn = t.isbn
 JOIN ejemplar e   ON e.id_libro = l.id_libro AND e.codigo = t.isbn || '-' || t.copia
@@ -152,13 +149,6 @@ JOIN prestamo pr  ON pr.id_ejemplar = e.id_ejemplar
                  AND pr.id_usuario_lector = lec.id_usuario
                  AND pr.fecha_prestamo = CURRENT_DATE - t.p
 WHERE t.d IS NOT NULL;
-
--- Los ejemplares con prestamo abierto quedan 'prestado'.
-UPDATE ejemplar SET estado = 'prestado'
-WHERE id_ejemplar IN (SELECT pr.id_ejemplar
-                      FROM prestamo pr
-                      WHERE pr.id_usuario_registra = (SELECT id_usuario FROM cuenta WHERE usuario = 'bib_prueba')
-                        AND NOT EXISTS (SELECT 1 FROM devolucion d WHERE d.id_prestamo = pr.id_prestamo));
 
 -- Resumen de lo insertado
 SELECT count(*)                                           AS prestamos,

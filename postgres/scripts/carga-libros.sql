@@ -93,9 +93,9 @@ FROM stg_libro s
 JOIN biblioteca.categoria c ON c.nombre = s.categoria
 WHERE s.motivo IS NULL;
 
--- Ejemplares: una fila por copia (codigo = isbn-numero de copia, estado inicial 'disponible').
+-- Ejemplares: una fila por copia (codigo = isbn-numero de copia, condicion fisica inicial 'bueno').
 INSERT INTO biblioteca.ejemplar (id_libro, codigo, estado)
-SELECT l.id_libro, v.isbn || '-' || g.n, 'disponible'
+SELECT l.id_libro, v.isbn || '-' || g.n, 'bueno'
 FROM (SELECT isbn, ejemplares_disponibles::integer AS copias
       FROM stg_libro WHERE motivo IS NULL) v
 JOIN biblioteca.libro l ON l.isbn = v.isbn
